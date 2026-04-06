@@ -1,325 +1,364 @@
+import { useState, useEffect, useRef } from 'react'
 import './App.css'
-import BorderGlow from './components/BorderGlow'
 
-const features = [
-  {
-    icon: '🧠',
-    iconClass: 'purple',
-    title: 'Neural Context Engine',
-    desc: 'NovaMind remembers every conversation, document, and decision — building a living model of your work that grows smarter over time.',
-    colors: ['#c084fc', '#a855f7', '#7c3aed'],
-    glow: '270 70 75',
-  },
-  {
-    icon: '⚡',
-    iconClass: 'pink',
-    title: 'Instant Synthesis',
-    desc: 'Turn hours of research into sharp, actionable insights in seconds. Feed it anything — PDFs, links, notes — and get clarity immediately.',
-    colors: ['#f472b6', '#ec4899', '#db2777'],
-    glow: '330 70 75',
-  },
-  {
-    icon: '🔒',
-    iconClass: 'blue',
-    title: 'Private by Design',
-    desc: 'Your data never trains our models. End-to-end encryption, SOC 2 Type II certified, and deployable entirely on-premise.',
-    colors: ['#38bdf8', '#0ea5e9', '#0284c7'],
-    glow: '200 80 70',
-  },
-  {
-    icon: '🔗',
-    iconClass: 'green',
-    title: 'Deep Integrations',
-    desc: 'Connect Notion, Slack, Linear, GitHub, and 200+ tools. NovaMind works where you work — no context switching required.',
-    colors: ['#34d399', '#10b981', '#059669'],
-    glow: '160 65 65',
-  },
-  {
-    icon: '🎯',
-    iconClass: 'orange',
-    title: 'Autonomous Agents',
-    desc: 'Delegate multi-step tasks to AI agents that plan, execute, and report back. Ship faster without losing oversight.',
-    colors: ['#fb923c', '#f97316', '#ea580c'],
-    glow: '25 80 70',
-  },
-  {
-    icon: '📊',
-    iconClass: 'cyan',
-    title: 'Team Intelligence',
-    desc: 'Shared knowledge bases, collaborative prompts, and AI-powered wikis keep the whole team aligned and up to speed.',
-    colors: ['#22d3ee', '#06b6d4', '#0891b2'],
-    glow: '190 75 65',
-  },
-]
+const CIRCUMFERENCE = 2 * Math.PI * 54 // r=54
 
-const testimonials = [
-  {
-    text: '"NovaMind cut our onboarding time in half. New engineers are productive on day one because the entire codebase context is just... there."',
-    name: 'Mia Chen',
-    role: 'CTO at Arkive',
-    avatarBg: 'linear-gradient(135deg, #c084fc, #f472b6)',
-    initial: 'M',
-    colors: ['#c084fc', '#f472b6', '#a855f7'],
-    glow: '280 70 75',
-  },
-  {
-    text: '"I replaced four separate tools with NovaMind. My research workflow is now frictionless — it\'s like having a second brain that actually works."',
-    name: 'James Okafor',
-    role: 'Lead Researcher at Nexus Labs',
-    avatarBg: 'linear-gradient(135deg, #38bdf8, #818cf8)',
-    initial: 'J',
-    colors: ['#38bdf8', '#818cf8', '#6366f1'],
-    glow: '215 75 70',
-  },
-  {
-    text: '"The autonomous agents handle our competitor analysis every week. We just wake up to a polished report in Slack. Absolutely wild."',
-    name: 'Sofia Reyes',
-    role: 'Head of Strategy at Meridian',
-    avatarBg: 'linear-gradient(135deg, #34d399, #22d3ee)',
-    initial: 'S',
-    colors: ['#34d399', '#22d3ee', '#10b981'],
-    glow: '170 70 65',
-  },
-]
+function getColor(score) {
+  if (score === null) return 'c-neutral'
+  if (score >= 67) return 'c-green'
+  if (score >= 34) return 'c-yellow'
+  return 'c-red'
+}
 
-const plans = [
-  {
-    name: 'Starter',
-    price: '0',
-    desc: 'For individuals exploring smarter ways to work.',
-    features: [
-      '50 AI requests / day',
-      '3 integrations',
-      '100 MB knowledge base',
-      'Community support',
-    ],
-    btnClass: '',
-    featured: false,
-    colors: ['#c084fc', '#f472b6', '#38bdf8'],
-    glow: '270 60 70',
-  },
-  {
-    name: 'Pro',
-    price: '29',
-    desc: 'For power users who need unlimited intelligence.',
-    features: [
-      'Unlimited AI requests',
-      'All 200+ integrations',
-      '10 GB knowledge base',
-      'Autonomous agents',
-      'Priority support',
-    ],
-    btnClass: 'featured',
-    featured: true,
-    badge: 'Most popular',
-    colors: ['#c084fc', '#f472b6', '#a855f7'],
-    glow: '280 80 80',
-  },
-  {
-    name: 'Team',
-    price: '79',
-    desc: 'For teams that want collective superintelligence.',
-    features: [
-      'Everything in Pro',
-      'Up to 25 seats',
-      'Shared knowledge bases',
-      'Admin controls & SSO',
-      'SLA & dedicated support',
-    ],
-    btnClass: '',
-    featured: false,
-    colors: ['#38bdf8', '#818cf8', '#6366f1'],
-    glow: '210 75 75',
-  },
-]
+function getStatus(score) {
+  if (score === null) return '—'
+  if (score >= 67) return 'Отличное'
+  if (score >= 34) return 'Умеренное'
+  return 'Низкое'
+}
+
+function formatTime(date) {
+  return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+}
+
+function simulateHRV() {
+  // HRV в миллисекундах (реалистичный диапазон 20–90 мс)
+  const hrv = Math.round(20 + Math.random() * 70)
+  // Recovery: нормализуем HRV → 0–100
+  const recovery = Math.min(100, Math.round((hrv / 90) * 100 + (Math.random() * 10 - 5)))
+  const rhr = Math.round(48 + Math.random() * 20) // resting HR 48–68
+  return { hrv, recovery: Math.max(0, Math.min(100, recovery)), rhr }
+}
+
+function HomeIcon({ active }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M3 12L12 3L21 12V21H15V15H9V21H3V12Z"
+        fill={active ? 'currentColor' : 'none'}
+        stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function AssistantIcon({ active }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M12 2C6.48 2 2 6.48 2 12C2 13.85 2.5 15.58 3.37 17.07L2 22L6.93 20.63C8.42 21.5 10.15 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z"
+        fill={active ? 'currentColor' : 'none'}
+        stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M8 11H8.01M12 11H12.01M16 11H16.01"
+        stroke={active ? '#000' : 'currentColor'} strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function ProfileIcon({ active }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="8" r="4"
+        fill={active ? 'currentColor' : 'none'}
+        stroke="currentColor" strokeWidth="1.8" />
+      <path d="M4 20C4 16.69 7.58 14 12 14C16.42 14 20 16.69 20 20"
+        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
 
 export default function App() {
+  const [tab, setTab] = useState('home')
+  const [measuring, setMeasuring] = useState(false)
+  const [progress, setProgress] = useState(0)   // 0–100
+  const [current, setCurrent] = useState(null)   // { hrv, recovery, rhr }
+  const [history, setHistory] = useState([])
+  const [connected] = useState(true)
+  const timerRef = useRef(null)
+  const startRef = useRef(null)
+
+  const DURATION = 5000 // 5 сек симуляция
+
+  function startMeasure() {
+    if (measuring) return
+    setMeasuring(true)
+    setProgress(0)
+    startRef.current = performance.now()
+
+    timerRef.current = setInterval(() => {
+      const elapsed = performance.now() - startRef.current
+      const p = Math.min((elapsed / DURATION) * 100, 100)
+      setProgress(p)
+
+      if (p >= 100) {
+        clearInterval(timerRef.current)
+        const result = simulateHRV()
+        setCurrent(result)
+        setHistory(prev => [
+          { ...result, time: new Date() },
+          ...prev.slice(0, 4),
+        ])
+        setMeasuring(false)
+      }
+    }, 50)
+  }
+
+  useEffect(() => () => clearInterval(timerRef.current), [])
+
+  const score = current?.recovery ?? null
+  const colorClass = getColor(score)
+  const dashOffset = score === null
+    ? CIRCUMFERENCE
+    : CIRCUMFERENCE * (1 - score / 100)
+
+  const faceClass = measuring ? 'measuring-face' : colorClass
+
+  // ─── ASSISTANT TAB ───
+  const [chatInput, setChatInput] = useState('')
+  const [messages, setMessages] = useState([
+    { from: 'bot', text: 'Привет! Я твой HRV-ассистент. Задай вопрос о своём восстановлении.' }
+  ])
+
+  function sendMessage() {
+    const text = chatInput.trim()
+    if (!text) return
+    const userMsg = { from: 'user', text }
+    const reply = getAutoReply(text, current)
+    setMessages(prev => [...prev, userMsg, { from: 'bot', text: reply }])
+    setChatInput('')
+  }
+
+  function getAutoReply(text, data) {
+    const t = text.toLowerCase()
+    if (t.includes('hrv') || t.includes('хрв')) {
+      return data
+        ? `Твой последний HRV: ${data.hrv} мс. ${data.hrv >= 55 ? 'Отличный показатель — нервная система хорошо восстановлена.' : data.hrv >= 35 ? 'Умеренный HRV. Стоит добавить сон и снизить стресс.' : 'Низкий HRV. Рекомендую отдых и избегать интенсивных нагрузок.'}`
+        : 'Сначала сделай измерение на главной — тогда смогу проанализировать твой HRV.'
+    }
+    if (t.includes('восстановл') || t.includes('recovery')) {
+      return data
+        ? `Твой Recovery Score: ${data.recovery}. ${data.recovery >= 67 ? 'Зелёная зона — можно тренироваться на полную.' : data.recovery >= 34 ? 'Жёлтая зона — умеренная нагрузка, не перегружайся.' : 'Красная зона — организм не восстановился. Лучше лёгкая активность или отдых.'}`
+        : 'Сначала сделай измерение на главной.'
+    }
+    if (t.includes('трениров') || t.includes('спорт')) {
+      return data
+        ? (data.recovery >= 67
+            ? 'Сегодня зелёный день — отличное время для высокоинтенсивной тренировки!'
+            : data.recovery >= 34
+              ? 'Recovery умеренный. Подойдёт средняя нагрузка: кардио или силовая в 70–80% от макс.'
+              : 'Recovery низкий. Рекомендую прогулку или лёгкую растяжку — не форсируй.')
+        : 'Сначала сделай измерение, чтобы я мог дать персональный совет.'
+    }
+    if (t.includes('сон') || t.includes('sleep')) {
+      return 'HRV тесно связан со сном. Старайся спать 7–9 часов, ложиться до полуночи и избегать алкоголя — он сильно снижает HRV.'
+    }
+    return 'Я могу ответить на вопросы о твоём HRV, recovery, тренировках и сне. Попробуй спросить!'
+  }
+
   return (
     <>
-      {/* NAV */}
-      <nav className="nav">
-        <div className="nav-logo">NovaMind</div>
-        <ul className="nav-links">
-          <li><a href="#features">Features</a></li>
-          <li><a href="#testimonials">Stories</a></li>
-          <li><a href="#pricing">Pricing</a></li>
-        </ul>
-        <button className="nav-cta">Get started free</button>
-      </nav>
+      {/* HEADER */}
+      <header className="header">
+        <div className="header-logo">CUBE<span>HRV</span></div>
+        <div className="header-status">
+          <div className={`header-dot ${connected ? '' : 'offline'}`} />
+          {connected ? 'ПОДКЛЮЧЕН' : 'НЕТ СВЯЗИ'}
+        </div>
+      </header>
 
-      {/* HERO */}
-      <section className="hero">
-        <div className="hero-bg-glow" />
-        <div className="hero-badge">
-          <span className="hero-badge-dot" />
-          Now in public beta — join 12,000+ teams
-        </div>
-        <h1>
-          Think faster.<br />
-          <span className="grad">Work smarter.</span>
-        </h1>
-        <p>
-          NovaMind is the AI workspace that learns your work, connects your tools,
-          and amplifies your team's collective intelligence — without the complexity.
-        </p>
-        <div className="hero-buttons">
-          <button className="btn-primary">Start for free</button>
-          <button className="btn-secondary">See a demo →</button>
-        </div>
-        <div className="hero-stats">
-          <div className="hero-stat">
-            <div className="hero-stat-value">12K+</div>
-            <div className="hero-stat-label">Active teams</div>
+      <main className="main">
+      {tab === 'assistant' && (
+        <div className="chat-screen">
+          <div className="chat-messages">
+            {messages.map((m, i) => (
+              <div key={i} className={`chat-bubble ${m.from}`}>{m.text}</div>
+            ))}
           </div>
-          <div className="hero-stat">
-            <div className="hero-stat-value">4.9★</div>
-            <div className="hero-stat-label">Average rating</div>
-          </div>
-          <div className="hero-stat">
-            <div className="hero-stat-value">200+</div>
-            <div className="hero-stat-label">Integrations</div>
-          </div>
-          <div className="hero-stat">
-            <div className="hero-stat-value">99.9%</div>
-            <div className="hero-stat-label">Uptime SLA</div>
+          <div className="chat-input-row">
+            <input
+              className="chat-input"
+              value={chatInput}
+              onChange={e => setChatInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && sendMessage()}
+              placeholder="Спроси об HRV, сне, тренировках..."
+            />
+            <button className="chat-send" onClick={sendMessage}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13"
+                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
           </div>
         </div>
-      </section>
+      )}
 
-      {/* FEATURES */}
-      <section className="features" id="features">
-        <p className="section-label">Features</p>
-        <h2 className="section-title">Everything your team needs</h2>
-        <p className="section-subtitle">
-          From solo researchers to enterprise teams — NovaMind adapts to
-          how you work, not the other way around.
-        </p>
-        <div className="features-grid">
-          {features.map((f) => (
-            <BorderGlow
-              key={f.title}
-              className="feature-card"
-              colors={f.colors}
-              glowColor={f.glow}
-              backgroundColor="#07001a"
-              borderRadius={20}
-              glowRadius={36}
-            >
-              <div className={`feature-icon ${f.iconClass}`}>{f.icon}</div>
-              <h3>{f.title}</h3>
-              <p>{f.desc}</p>
-            </BorderGlow>
+      {tab === 'profile' && (
+        <div className="profile-screen">
+          <div className="profile-avatar">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.5"/>
+              <path d="M4 20C4 16.69 7.58 14 12 14C16.42 14 20 16.69 20 20"
+                stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <div className="profile-name">Пользователь</div>
+          <div className="profile-device">CubeHRV • Устройство подключено</div>
+
+          <div className="profile-stats">
+            <div className="profile-stat">
+              <div className="profile-stat-val">{history.length}</div>
+              <div className="profile-stat-label">Измерений</div>
+            </div>
+            <div className="profile-stat">
+              <div className="profile-stat-val">
+                {history.length ? Math.round(history.reduce((s, h) => s + h.recovery, 0) / history.length) : '—'}
+              </div>
+              <div className="profile-stat-label">Ср. Recovery</div>
+            </div>
+            <div className="profile-stat">
+              <div className="profile-stat-val">
+                {history.length ? Math.round(history.reduce((s, h) => s + h.hrv, 0) / history.length) : '—'}
+              </div>
+              <div className="profile-stat-label">Ср. HRV мс</div>
+            </div>
+          </div>
+
+          <div className="profile-section-title">Настройки</div>
+          {[
+            { label: 'Уведомления', hint: 'Включены' },
+            { label: 'Единицы HRV', hint: 'Миллисекунды' },
+            { label: 'Синхронизация', hint: 'Авто' },
+          ].map(item => (
+            <div className="profile-row" key={item.label}>
+              <span>{item.label}</span>
+              <span className="profile-row-hint">{item.hint}</span>
+            </div>
           ))}
         </div>
-      </section>
+      )}
+      {tab === 'home' && <>
+        {/* CUBE + RING */}
+        <div className="cube-section">
+          {/* 3D куб */}
+          <div className="cube-scene">
+            <div className={`cube ${measuring ? 'measuring' : ''}`}>
+              <div className={`cube-face front  ${faceClass}`} />
+              <div className={`cube-face back   ${faceClass}`} />
+              <div className={`cube-face left   ${faceClass}`} />
+              <div className={`cube-face right  ${faceClass}`} />
+              <div className={`cube-face top    ${faceClass}`} />
+              <div className={`cube-face bottom ${faceClass}`} />
+            </div>
+          </div>
 
-      {/* TESTIMONIALS */}
-      <section className="testimonials" id="testimonials">
-        <p className="section-label">Stories</p>
-        <h2 className="section-title">Loved by builders</h2>
-        <p className="section-subtitle">
-          Teams across engineering, research, and strategy trust NovaMind
-          to handle the cognitive heavy lifting.
-        </p>
-        <div className="testimonials-grid">
-          {testimonials.map((t) => (
-            <BorderGlow
-              key={t.name}
-              className="testimonial-card"
-              colors={t.colors}
-              glowColor={t.glow}
-              backgroundColor="#060014"
-              borderRadius={20}
-              glowRadius={36}
-            >
-              <p className="testimonial-text">{t.text}</p>
-              <div className="testimonial-author">
-                <div
-                  className="testimonial-avatar"
-                  style={{ background: t.avatarBg }}
-                >
-                  {t.initial}
+          {/* Recovery ring */}
+          {measuring ? (
+            <div className="measuring-overlay">
+              <div className="measuring-dots">
+                <div className="measuring-dot" />
+                <div className="measuring-dot" />
+                <div className="measuring-dot" />
+              </div>
+              <div className="measuring-text">АНАЛИЗ HRV...</div>
+            </div>
+          ) : (
+            <div className="recovery-ring">
+              <svg className="ring-svg" viewBox="0 0 120 120">
+                <circle className="ring-track" cx="60" cy="60" r="54" />
+                <circle
+                  className={`ring-fill ${colorClass}`}
+                  cx="60" cy="60" r="54"
+                  strokeDasharray={CIRCUMFERENCE}
+                  strokeDashoffset={dashOffset}
+                />
+              </svg>
+              <div className="ring-content">
+                <div className={`ring-score ${colorClass}`}>
+                  {score ?? '—'}
                 </div>
-                <div>
-                  <div className="testimonial-name">{t.name}</div>
-                  <div className="testimonial-role">{t.role}</div>
+                <div className="ring-label">RECOVERY</div>
+                <div className={`ring-status ${colorClass}`}>
+                  {getStatus(score)}
                 </div>
               </div>
-            </BorderGlow>
-          ))}
+            </div>
+          )}
         </div>
-      </section>
 
-      {/* PRICING */}
-      <section className="pricing" id="pricing">
-        <p className="section-label">Pricing</p>
-        <h2 className="section-title">Simple, honest pricing</h2>
-        <p className="section-subtitle">
-          Start free, upgrade when you're ready. No hidden fees, no surprise bills.
-        </p>
-        <div className="pricing-grid">
-          {plans.map((plan) => (
-            <BorderGlow
-              key={plan.name}
-              className="pricing-card"
-              colors={plan.colors}
-              glowColor={plan.glow}
-              backgroundColor="#07001a"
-              borderRadius={24}
-              glowRadius={40}
-              glowIntensity={plan.featured ? 1.2 : 0.9}
-            >
-              {plan.badge && <div className="pricing-badge">{plan.badge}</div>}
-              <div className="pricing-plan">{plan.name}</div>
-              <div className="pricing-price">
-                <span className="pricing-currency">$</span>
-                <span className="pricing-amount">{plan.price}</span>
-                {plan.price !== '0' && <span className="pricing-period">/mo</span>}
-              </div>
-              <p className="pricing-desc">{plan.desc}</p>
-              <div className="pricing-divider" />
-              <ul className="pricing-features">
-                {plan.features.map((feat) => (
-                  <li key={feat}>
-                    <span className="pricing-check">✦</span>
-                    {feat}
-                  </li>
-                ))}
-              </ul>
-              <button className={`btn-plan ${plan.btnClass}`}>
-                {plan.price === '0' ? 'Get started free' : `Get ${plan.name}`}
-              </button>
-            </BorderGlow>
-          ))}
+        {/* METRICS */}
+        <div className="metrics-row">
+          <div className="metric-card">
+            <div className="metric-card-label">HRV</div>
+            <div className="metric-card-value" style={{ color: current ? 'var(--text)' : 'var(--text-dim)' }}>
+              {measuring ? '...' : (current?.hrv ?? '—')}
+            </div>
+            <div className="metric-card-unit">мс</div>
+          </div>
+          <div className="metric-card">
+            <div className="metric-card-label">Пульс покоя</div>
+            <div className="metric-card-value" style={{ color: current ? 'var(--text)' : 'var(--text-dim)' }}>
+              {measuring ? '...' : (current?.rhr ?? '—')}
+            </div>
+            <div className="metric-card-unit">уд/мин</div>
+          </div>
         </div>
-      </section>
 
-      {/* CTA */}
-      <section className="cta-section">
-        <BorderGlow
-          className="cta-card"
-          colors={['#c084fc', '#f472b6', '#38bdf8']}
-          glowColor="270 75 78"
-          backgroundColor="#08001c"
-          borderRadius={28}
-          glowRadius={50}
-          glowIntensity={1.1}
-          animated
+        {/* BUTTON */}
+        <button
+          className="measure-btn"
+          onClick={startMeasure}
+          disabled={measuring}
         >
-          <h2>Your second brain<br />awaits.</h2>
-          <p>
-            Join 12,000+ teams already working smarter. Set up takes under
-            two minutes — no credit card required.
-          </p>
-          <button className="btn-primary">Start for free today</button>
-        </BorderGlow>
-      </section>
+          {measuring
+            ? `Измеряем... ${Math.round(progress)}%`
+            : current
+              ? 'Измерить снова'
+              : 'Начать измерение'
+          }
+        </button>
 
-      {/* FOOTER */}
-      <footer className="footer">
-        <div className="footer-logo">NovaMind</div>
-        <div className="footer-copy">© 2026 NovaMind, Inc. All rights reserved.</div>
-      </footer>
+        {/* HISTORY */}
+        <div className="history-section">
+          <div className="history-title">История</div>
+          {history.length === 0 ? (
+            <div className="empty-history">Нет данных — нажми «Начать измерение»</div>
+          ) : (
+            <div className="history-list">
+              {history.map((item, i) => {
+                const c = getColor(item.recovery)
+                return (
+                  <div className="history-item" key={i}>
+                    <div className="history-item-left">
+                      <div className={`history-dot ${c}`} />
+                      <div className="history-meta">
+                        <div className="history-time">{formatTime(item.time)}</div>
+                        <div className="history-hrv-val">HRV {item.hrv} мс · {item.rhr} уд/мин</div>
+                      </div>
+                    </div>
+                    <div className={`history-score ${c}`}>{item.recovery}</div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </>}
+      </main>
+
+      {/* BOTTOM NAV */}
+      <nav className="bottom-nav">
+        {[
+          { id: 'home',      label: 'Главная',   Icon: HomeIcon },
+          { id: 'assistant', label: 'Ассистент', Icon: AssistantIcon },
+          { id: 'profile',   label: 'Профиль',   Icon: ProfileIcon },
+        ].map(({ id, label, Icon }) => (
+          <button
+            key={id}
+            className={`nav-item ${tab === id ? 'active' : ''}`}
+            onClick={() => setTab(id)}
+          >
+            <Icon active={tab === id} />
+            <span>{label}</span>
+          </button>
+        ))}
+      </nav>
     </>
   )
 }
